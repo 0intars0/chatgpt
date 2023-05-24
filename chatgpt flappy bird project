@@ -1,0 +1,127 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Game window dimensions
+width = 400
+height = 600
+
+# Colors
+white = (255, 255, 255)
+black = (0, 0, 0)
+
+# Create game window
+game_window = pygame.display.set_mode((width, height))
+pygame.display.set_caption('Flappy Bird')
+
+clock = pygame.time.Clock()
+
+# Load images
+bg_img = pygame.image.load('background.png').convert()
+bird_img = pygame.image.load('bird.png').convert_alpha()
+pipe_img = pygame.image.load('pipe.png').convert_alpha()
+
+# Bird class
+class Bird(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = bird_img
+        self.rect = self.image.get_rect()
+        self.rect.x = 100
+        self.rect.y = height / 2
+        self.velocity = 0
+        self.gravity = 0.5
+
+    def update(self):
+        self.velocity += self.gravity
+        self.rect.y += self.velocity
+
+    def jump(self):
+        self.velocity = -8
+
+# Pipe class
+class Pipe(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pipe_img
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def update(self):
+        self.rect.x -= 5
+        if self.rect.right < 0:
+            self.kill()
+
+# Create bird object
+bird = Bird()
+
+# Create sprite groups
+all_sprites = pygame.sprite.Group()
+all_pipes = pygame.sprite.Group()
+
+# Add bird to sprite groups
+all_sprites.add(bird)
+
+# Game variables
+pipe_frequency = 100
+pipe_counter = 0
+
+score = 0
+font = pygame.font.Font('freesansbold.ttf', 24)
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                bird.jump()
+
+    # Update bird and pipes
+    all_sprites.update()
+
+    # Check for collision with pipes
+    hits = pygame.sprite.spritecollide(bird, all_pipes, False)
+    if hits:
+        running = False
+
+    # Generate new pipes
+    pipe_counter += 1
+    if pipe_counter == pipe_frequency:
+        pipe_x = width
+        pipe_y = random.randint(100, height - 200)
+        pipe = Pipe(pipe_x, pipe_y)
+        all_sprites.add(pipe)
+        all_pipes.add(pipe)
+        pipe_counter = 0
+
+    # Remove off-screen pipes
+    for pipe in all_pipes:
+        if pipe.rect.right < 0:
+            all_pipes.remove(pipe)
+
+    # Draw background
+    game_window.blit(bg_img, (0, 0))
+
+    # Draw sprites
+    all_sprites.draw(game_window)
+
+    # Display score
+    score_text = font.render(f'Score: {score}', True, white)
+    game_window.blit(score_text, (10, 10))
+
+    # Update display
+    pygame.display.update()
+
+    # Increase score
+    score += 1
+
+    # Set FPS
+    clock.tick(30)
+
+# Quit the game
+pygame.quit()
